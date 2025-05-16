@@ -1,0 +1,79 @@
+{
+  "build": {
+    "builder": "NIXPACKS",
+    "nixpacksPlan": {
+      "phases": {
+        "setup": {
+          "nixPkgs": ["docker"]
+        }
+      }
+    }
+  },
+  "deploy": {
+    "startCommand": "docker-compose up --build"
+  },
+  "services": {
+    "api": {
+      "image": "atendai/evolution-api:homolog",
+      "envFile": ".env",
+      "restartPolicy": "always",
+      "ports": [
+        {
+          "port": 8080,
+          "targetPort": 8080
+        }
+      ],
+      "volumes": [
+        {
+          "name": "evolution_instances",
+          "mountPath": "/evolution/instances"
+        }
+      ],
+      "dependsOn": ["redis", "postgres"]
+    },
+    "redis": {
+      "image": "redis:latest",
+      "command": "redis-server --port 6379 --appendonly yes",
+      "ports": [
+        {
+          "port": 6379,
+          "targetPort": 6379
+        }
+      ],
+      "volumes": [
+        {
+          "name": "evolution_redis",
+          "mountPath": "/data"
+        }
+      ]
+    },
+    "postgres": {
+      "image": "postgres:15",
+      "command": ["postgres", "-c", "max_connections=1000", "-c", "listen_addresses=*"],
+      "ports": [
+        {
+          "port": 5432,
+          "targetPort": 5432
+        }
+      ],
+      "env": {
+        "POSTGRES_USER": "user",
+        "POSTGRES_PASSWORD": "pass",
+        "POSTGRES_DB": "evolution",
+        "POSTGRES_HOST_AUTH_METHOD": "trust"
+      },
+      "volumes": [
+        {
+          "name": "postgres_data",
+          "mountPath": "/var/lib/postgresql/data"
+        }
+      ],
+      "restartPolicy": "always"
+    }
+  },
+  "volumes": {
+    "evolution_instances": {},
+    "evolution_redis": {},
+    "postgres_data": {}
+  }
+}
